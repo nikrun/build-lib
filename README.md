@@ -11,7 +11,7 @@ Shared build, packaging, and release automation library for the **Nikrun** ecosy
   - `Resolve-BuildVersion` — Resolves `CleanVersion` (`X.Y.Z`) and `VersionTag` (`vX.Y.Z-build.N-channel.<dev|insider|stable>`) from `version.txt` or `-Version`.
   - `New-ReleaseNotesSpec` & `New-ReleaseNotesMarkdown` — Parses `changelog.yml` into `<product>-<versionTag>-release-notes.json` and formatted GitHub Release Markdown notes.
   - `New-Manifest` — Generates `manifest.json` describing product downloads, sizes, SHA-256 checksums, and spec artifacts.
-  - `New-ZipArchive` & `New-Sha256File` — Cross-platform `.zip` packaging (preserving Unix executable permissions) and `.sha256` sidecar generation.
+  - `New-ZipArchive` & `Get-FileSha256` — Cross-platform `.zip` packaging (preserving Unix executable permissions) and SHA-256 digest calculation for `manifest.json`.
   - `New-NpmCycloneDxSbom` — Generates CycloneDX JSON SBOMs (`*-sbom.cdx.json`) enriched with `package-lock.json` integrity hashes.
   - `Invoke-BuildLibTests` — Runs the Pester 5+ unit test suite (`Common.Tests.ps1`).
 - **`github-actions/bump-version/`** — GitHub composite action that increments `version.txt` (`patch`, `minor`, `major`), stamps the release date + new version section into `changelog.yml` (and `package.json` when present), and opens a Pull Request against `main` after `stable` releases.

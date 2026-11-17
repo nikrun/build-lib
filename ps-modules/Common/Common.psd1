@@ -10,7 +10,7 @@
         'New-ReleaseNotesSpec',
         'New-ReleaseNotesMarkdown',
         'New-Manifest',
-        'New-Sha256File',
+        'Get-FileSha256',
         'New-ZipArchive',
         'New-NpmCycloneDxSbom',
         'Invoke-BuildLibTests'

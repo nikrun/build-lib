@@ -247,11 +247,10 @@ function Resolve-BuildVersion {
     }
 }
 
-function New-Sha256File {
+function Get-FileSha256 {
     <#
     .SYNOPSIS
-    Computes the lowercase SHA-256 checksum of FilePath, writes "<FilePath>.sha256",
-    and returns the SHA-256 hex digest.
+    Computes and returns the lowercase SHA-256 hex digest of FilePath.
     #>
     [CmdletBinding()]
     param (
@@ -262,10 +261,7 @@ function New-Sha256File {
         throw "Cannot compute SHA-256: file not found at $FilePath"
     }
 
-    $hash = (Get-FileHash -Path $FilePath -Algorithm SHA256).Hash.ToLowerInvariant()
-    $fileName = [System.IO.Path]::GetFileName($FilePath)
-    Write-Utf8NoBom -Path "$FilePath.sha256" -Content "$hash  $fileName`n"
-    return $hash
+    return (Get-FileHash -Path $FilePath -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
 function New-ZipArchive {
@@ -476,7 +472,7 @@ Export-ModuleMember -Function @(
     'New-ReleaseNotesSpec',
     'New-ReleaseNotesMarkdown',
     'New-Manifest',
-    'New-Sha256File',
+    'Get-FileSha256',
     'New-ZipArchive',
     'New-NpmCycloneDxSbom',
     'Invoke-BuildLibTests'

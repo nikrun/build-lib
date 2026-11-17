@@ -106,8 +106,8 @@ Describe 'New-Manifest' {
     }
 }
 
-Describe 'New-ZipArchive & New-Sha256File' {
-    It 'creates a root-level zip archive and matching .sha256 checksum file' {
+Describe 'New-ZipArchive & Get-FileSha256' {
+    It 'creates a root-level zip archive and computes lowercase SHA-256 without sidecar files' {
         $dir = Join-Path $TestDrive 'zip-test'
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
         $dummyBin = Join-Path $dir 'nik.exe'
@@ -117,8 +117,8 @@ Describe 'New-ZipArchive & New-Sha256File' {
         New-ZipArchive -SourceFiles @($dummyBin) -DestinationZipPath $zipPath | Out-Null
         Test-Path $zipPath | Should -BeTrue
 
-        $sha = New-Sha256File -FilePath $zipPath
+        $sha = Get-FileSha256 -FilePath $zipPath
         $sha | Should -Match '^[0-9a-f]{64}$'
-        (Get-Content "$zipPath.sha256" -Raw).Trim() | Should -Be "$sha  nik-v0.1.0-x86_64-win64.zip"
+        Test-Path "$zipPath.sha256" | Should -BeFalse
     }
 }
