@@ -1,0 +1,160 @@
+name: Auto-Increment Version
+description: Increments the version string in version.txt (and changelog.yml / package.json if present) and creates a Pull Request against main on stable releases
+
+inputs:
+  channel:
+    description: 'Release channel (stable or insider)'
+    required: true
+  increment:
+    description: 'Version increment method (none, patch, minor, major)'
+    required: true
+    default: 'none'
+  github-token:
+    description: 'GitHub token for pushing the branch and creating the Pull Request'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Run Version Increment and PR Creation
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        INPUT_CHANNEL: ${{ inputs.channel }}
+        INPUT_INCREMENT: ${{ inputs.increment }}
+      run: |
+        set -euo pipefail
+        CHANNEL="${INPUT_CHANNEL}"
+        INCREMENT="${INPUT_INCREMENT}"
+
+        if [ "$CHANNEL" = "stable" ] && [ "$INCREMENT" != "none" ]; then
+          echo "Stable release detected with increment option: $INCREMENT. Proceeding to bump version..."
+
+          if [ ! -f version.txt ]; then
+            echo "Error: version.txt not found!"
+            exit 1
+          fi
+
+          CLEAN_VERSION=$(tr -d 'v\n\r ' < version.txt)
+          echo "Current Version: $CLEAN_VERSION"
+
+          IFS='.' read -r major minor patch <<< "$CLEAN_VERSION"
+          if [ -z "${major:-}" ] || [ -z "${minor:-}" ] || [ -z "${patch:-}" ]; then
+            echo "Error: version.txt does not contain a valid x.y.z SemVer!"
+            exit 1
+          fi
+
+          if [ "$INCREMENT" = "major" ]; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif [ "$INCREMENT" = "minor" ]; then
+            minor=$((minor + 1))
+            patch=0
+          elif [ "$INCREMENT" = "patch" ]; then
+            patch=$((patch + 1))
+          else
+            echo "Error: unsupported increment '$INCREMENT' (expected none, patch, minor, or major)."
+            exit 1
+          fi
+
+          NEW_VERSION="${major}.${minor}.${patch}"
+          echo "New Version: $NEW_VERSION"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          BRANCH_NAME="bump-version-${NEW_VERSION}"
+          echo "Creating and checking out branch $BRANCH_NAME..."
+          git checkout -B "$BRANCH_NAME"
+
+          printf '%s\n' "$NEW_VERSION" > version.txt
+          export NEW_VERSION
+
+          # Update changelog.yml without external PyYAML dependency
+          if [ -f changelog.yml ]; then
+            python3 - <<'PY'
+        import datetime, os, re
+
+        file_path = "changelog.yml"
+        new_ver = os.environ["NEW_VERSION"].lstrip("v")
+        today = datetime.date.today().isoformat()
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.read().splitlines()
+
+        # Stamp date onto the first existing '- version: ...' entry if it has no 'date:' before 'changes:'
+        first_ver_idx = None
+        for idx, line in enumerate(lines):
+            if re.match(r"^\s*-\s*version:\s*", line):
+                first_ver_idx = idx
+                break
+
+        if first_ver_idx is not None:
+            has_date = False
+            for j in range(first_ver_idx + 1, min(first_ver_idx + 5, len(lines))):
+                if re.match(r"^\s*date:\s*", lines[j]):
+                    has_date = True
+                    break
+                if re.match(r"^\s*changes:\s*", lines[j]) or re.match(r"^\s*-\s*version:\s*", lines[j]):
+                    break
+            if not has_date:
+                indent_match = re.match(r"^(\s*)-\s*version:", lines[first_ver_idx])
+                prop_indent = (indent_match.group(1) if indent_match else "  ") + "  "
+                lines.insert(first_ver_idx + 1, f"{prop_indent}date: '{today}'")
+
+        new_block = [
+            f"  - version: {new_ver}",
+            "    changes:",
+            "      added: []",
+            "      changed: []",
+            "      deprecated: []",
+            "      fixed: []",
+            "      removed: []",
+            "      security: []",
+        ]
+
+        header_idx = None
+        for idx, line in enumerate(lines):
+            if re.match(r"^changelog:\s*$", line):
+                header_idx = idx
+                break
+
+        if header_idx is not None:
+            lines = lines[: header_idx + 1] + new_block + lines[header_idx + 1 :]
+        else:
+            lines = ["changelog:"] + new_block + lines
+
+        with open(file_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(lines) + "\n")
+
+        print(f"Updated changelog.yml with new version {new_ver}")
+        PY
+          fi
+
+          git add version.txt
+          if [ -f changelog.yml ]; then
+            git add changelog.yml
+          fi
+
+          # Keep package.json (& package-lock.json) in sync when present (e.g. vscode extension)
+          if [ -f package.json ] && command -v npm >/dev/null 2>&1; then
+            npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version
+            git add package.json
+            if [ -f package-lock.json ]; then
+              git add package-lock.json
+            fi
+          fi
+
+          git commit -m "chore: bump version to ${NEW_VERSION}"
+          git push --force origin "$BRANCH_NAME"
+
+          echo "Creating Pull Request..."
+          gh pr create \
+            --title "chore: bump version to ${NEW_VERSION}" \
+            --body "Automated version bump to \`${NEW_VERSION}\` after stable release." \
+            --base main \
+            --head "$BRANCH_NAME"
+        else
+          echo "No version increment requested (Channel: $CHANNEL, Increment: $INCREMENT)."
+        fi
