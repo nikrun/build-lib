@@ -67,6 +67,7 @@ changelog:
         $mdPath = Join-Path $dir 'release-notes.md'
         New-ReleaseNotesMarkdown -ChangelogPath $clPath -CleanVersion '0.1.0' -ProductName 'Nikrun CLI' -VersionTag 'v0.1.0-build.5-channel.stable' -OutputPath $mdPath | Out-Null
         $md = Get-Content $mdPath -Raw
+        $md | Should -Not -Match '(?m)^## '
         $md | Should -Match '### Added'
         $md | Should -Match 'Initial CLI release'
         $md | Should -Not -Match '### Removed'

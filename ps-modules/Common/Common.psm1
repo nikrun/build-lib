@@ -145,9 +145,9 @@ function New-ReleaseNotesMarkdown {
     }
 
     $body = if ($sections.Count -gt 0) {
-        "## $ProductName ``$VersionTag```n`n" + ($sections -join "`n`n") + "`n"
+        ($sections -join "`n`n") + "`n"
     } else {
-        "Automatically generated release for **$ProductName** (``$VersionTag``).`n"
+        "Automatically generated release.`n"
     }
 
     Write-Utf8NoBom -Path $OutputPath -Content $body
