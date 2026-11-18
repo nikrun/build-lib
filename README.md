@@ -18,4 +18,6 @@ Shared build, packaging, and release automation library for the **Nikrun** ecosy
 
 ## License
 
-Licensed under the [MIT License](./LICENSE).
+Copyright (c) 2026 The Nikrun Contributors.
+
+Licensed under the **GNU General Public License v3.0 or later** (`GPL-3.0-or-later`) — see [LICENSE](./LICENSE).

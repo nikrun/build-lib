@@ -302,7 +302,7 @@ function New-ZipArchive {
             $name = [System.IO.Path]::GetFileName($src)
             $stagedFile = Join-Path $stageDir $name
             Copy-Item -Path $src -Destination $stagedFile -Force
-            if ((-not $isWinHost) -and (Get-Command chmod -ErrorAction SilentlyContinue)) {
+            if ((-not $isWinHost) -and ($name -notmatch '^(LICENSE|COPYING|README)(\..+)?$') -and ($name -notmatch '\.(txt|md|json|yaml|yml)$') -and (Get-Command chmod -ErrorAction SilentlyContinue)) {
                 & chmod +x $stagedFile
             }
             $entryNames += $name
