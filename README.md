@@ -1,3 +1,10 @@
+<p align="left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://nikrun.dev/brand/nikrun-lockup-dark-mono.svg">
+    <img alt="Nikrun" src="https://nikrun.dev/brand/nikrun-lockup-light.svg" height="52">
+  </picture>
+</p>
+
 # Nikrun — Shared Build & Release Library (`nikrun/build-lib`)
 
 Shared build, packaging, and release automation library for the **Nikrun** ecosystem, consumed as a Git submodule (`build-lib/`) across:
